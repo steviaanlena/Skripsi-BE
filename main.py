@@ -193,20 +193,3 @@ async def test():
         "scores": prediction['scores'],
         "model_accuracy": model_results['test_accuracy'] if model_results else None
     }
-
-if __name__ == "__main__":
-    import uvicorn
-    import os
-    
-    port = int(os.environ.get("PORT", 8000))
-    
-    if os.environ.get("PORT"):
-        # Running on Railway
-        host = "0.0.0.0"
-        print(f"Starting on Railway - port {port}")
-    else:
-        # Running locally
-        host = "127.0.0.1"
-        print(f"Starting locally - http://localhost:{port}")
-    
-    uvicorn.run(app, host=host, port=port)
