@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from typing import Dict
 import pickle
 import random
+import os
 
 # Import your stemmer
 try:
@@ -195,4 +196,17 @@ async def test():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    import os
+    
+    port = int(os.environ.get("PORT", 8000))
+    
+    if os.environ.get("PORT"):
+        # Running on Railway
+        host = "0.0.0.0"
+        print(f"Starting on Railway - port {port}")
+    else:
+        # Running locally
+        host = "127.0.0.1"
+        print(f"Starting locally - http://localhost:{port}")
+    
+    uvicorn.run(app, host=host, port=port)
