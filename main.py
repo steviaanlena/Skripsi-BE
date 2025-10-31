@@ -24,7 +24,7 @@ app = FastAPI(title="Javanese Emotion Detection API")
 # Enable CORS so your React frontend can call this
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "https://javanese-emotion-detection.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
