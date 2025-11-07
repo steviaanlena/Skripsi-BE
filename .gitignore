@@ -10,6 +10,7 @@ ENV/
 
 # Model files
 *.pth
+indobert_model.pth
 *.pt
 *.bin
 *.pkl
