@@ -68,6 +68,36 @@ async def load_model():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"📱 Using device: {device}")
     
+    # Download model if not present
+    MODEL_FILE = 'indobert_model.pth'
+    # Get model URL from environment variable or use default
+    MODEL_URL = os.environ.get('MODEL_URL', None)
+    
+    if not os.path.exists(MODEL_FILE) and MODEL_URL:
+        print(f"📥 Model not found locally. Downloading from: {MODEL_URL}")
+        print(f"   File size: ~422 MB - this will take 2-3 minutes...")
+        try:
+            import requests
+            response = requests.get(MODEL_URL, stream=True)
+            response.raise_for_status()
+            
+            total_size = int(response.headers.get('content-length', 0))
+            downloaded = 0
+            
+            with open(MODEL_FILE, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if total_size > 0:
+                            percent = (downloaded / total_size) * 100
+                            print(f"   Progress: {percent:.1f}% ({downloaded // (1024*1024)} MB / {total_size // (1024*1024)} MB)", end='\r')
+            
+            print("\n✅ Model downloaded successfully!")
+        except Exception as e:
+            print(f"❌ Error downloading model: {e}")
+            print("   Please check MODEL_URL environment variable or upload model manually")
+    
     # Load tokenizer
     try:
         print("📥 Loading IndoBERT tokenizer...")
@@ -83,14 +113,17 @@ async def load_model():
         model = IndoBERTClassifier(num_classes=4)
         
         # Try to load saved weights
-        if os.path.exists('indobert_model.pth'):
-            print("   Loading saved model weights...")
-            model.load_state_dict(torch.load('indobert_model.pth', map_location=device))
-            print("   ✅ Model weights loaded from indobert_model.pth")
+        if os.path.exists(MODEL_FILE):
+            print(f"   Loading saved model weights from {MODEL_FILE}...")
+            model.load_state_dict(torch.load(MODEL_FILE, map_location=device))
+            print("   ✅ Model weights loaded successfully!")
         else:
-            print("   ⚠️ No saved weights found (indobert_model.pth)")
+            print(f"   ⚠️ No saved weights found ({MODEL_FILE})")
             print("   ⚠️ Model will use randomly initialized weights!")
-            print("   ⚠️ Please train the model and save weights using save_model_for_deployment.py")
+            if GDRIVE_FILE_ID:
+                print("   ⚠️ Model download may have failed - check logs above")
+            else:
+                print("   ⚠️ Set MODEL_FILE_ID environment variable or upload model manually")
         
         model.to(device)
         model.eval()
