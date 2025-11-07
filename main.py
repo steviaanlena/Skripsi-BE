@@ -115,7 +115,7 @@ async def load_model():
         # Try to load saved weights
         if os.path.exists(MODEL_FILE):
             print(f"   Loading saved model weights from {MODEL_FILE}...")
-            model.load_state_dict(torch.load(MODEL_FILE, map_location=device))
+            model.load_state_dict(torch.load(MODEL_FILE, map_location=device, weights_only=False))
             print("   ✅ Model weights loaded successfully!")
         else:
             print(f"   ⚠️ No saved weights found ({MODEL_FILE})")
