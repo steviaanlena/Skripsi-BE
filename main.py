@@ -120,10 +120,10 @@ async def load_model():
         else:
             print(f"   ⚠️ No saved weights found ({MODEL_FILE})")
             print("   ⚠️ Model will use randomly initialized weights!")
-            if GDRIVE_FILE_ID:
+            if MODEL_URL:
                 print("   ⚠️ Model download may have failed - check logs above")
             else:
-                print("   ⚠️ Set MODEL_FILE_ID environment variable or upload model manually")
+                print("   ⚠️ Set MODEL_URL environment variable or upload model manually")
         
         model.to(device)
         model.eval()
