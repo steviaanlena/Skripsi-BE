@@ -5,7 +5,7 @@ Javanese Emotion Detection API using IndoBERT
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict
+from typing import Dict, List
 import torch
 import pickle
 import os
@@ -16,7 +16,7 @@ from transformers import AutoTokenizer
 
 # Import stemmer
 try:
-    from javanese_stemmer import JavaneseStemmerLibrary
+    from javanese_stemmer import JavaneseStemmer
     STEMMER_AVAILABLE = True
 except ImportError:
     print("⚠️ javanese-stemmer not installed")
@@ -135,7 +135,7 @@ async def load_model():
     # Load stemmer
     if STEMMER_AVAILABLE:
         try:
-            stemmer = JavaneseStemmerLibrary()
+            stemmer = JavaneseStemmer()
             print("✅ Javanese stemmer loaded!")
         except Exception as e:
             print(f"⚠️ Error loading stemmer: {e}")
@@ -163,6 +163,15 @@ class AnalysisResponse(BaseModel):
     emotion: str
     scores: Dict[str, float]
     confidence: float
+
+class WordPair(BaseModel):
+    original: str
+    stemmed: str
+
+class StemResponse(BaseModel):
+    original: str
+    stemmed: str
+    words: List[WordPair]
 
 
 @app.post("/analyze", response_model=AnalysisResponse)
@@ -236,6 +245,57 @@ async def analyze_text(request: TextRequest):
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
+@app.post("/stem", response_model=StemResponse)
+async def stem_text_endpoint(request: TextRequest):
+    """
+    Stem Javanese text using javanese-stemmer library
+    
+    Args:
+        text: Javanese text to stem
+    
+    Returns:
+        - original: Original input text
+        - stemmed: Stemmed text
+        - words: List of word pairs (original -> stemmed)
+    """
+    if not STEMMER_AVAILABLE or stemmer is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Stemmer not available. Please install javanese-stemmer package."
+        )
+    
+    try:
+        text = request.text.strip()
+        
+        if not text:
+            raise HTTPException(status_code=400, detail="Text cannot be empty")
+        
+        # Stem the full text
+        stemmed_text = stemmer.stem_text(text)
+        
+        # Create word-by-word analysis
+        words = text.split()
+        word_pairs = []
+        for word in words:
+            stemmed_word = stemmer.stem(word)
+            word_pairs.append(WordPair(
+                original=word,
+                stemmed=stemmed_word
+            ))
+        
+        return StemResponse(
+            original=text,
+            stemmed=stemmed_text,
+            words=word_pairs
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in stem_text_endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
 @app.get("/")
 async def root():
     """Health check and API info"""
@@ -248,7 +308,13 @@ async def root():
         "model_loaded": model is not None,
         "tokenizer_loaded": tokenizer is not None,
         "stemmer_loaded": stemmer is not None,
-        "test_accuracy": model_results['test_accuracy'] if model_results else None
+        "test_accuracy": model_results['test_accuracy'] if model_results else None,
+        "endpoints": {
+            "/analyze": "POST - Analyze emotion in Javanese text",
+            "/stem": "POST - Stem Javanese text",
+            "/test": "GET - Test with sample texts",
+            "/health": "GET - Detailed health check"
+        }
     }
 
 

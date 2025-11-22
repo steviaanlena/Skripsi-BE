@@ -6,7 +6,7 @@ from transformers import AutoModel, AutoTokenizer
 
 
 class IndoBERTClassifier(torch.nn.Module):
-    """
+    """     
     IndoBERT-based classifier for emotion detection
     Architecture: BERT -> Dropout -> FC1 -> ReLU -> Dropout -> FC2
     """
