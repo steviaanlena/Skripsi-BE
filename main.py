@@ -83,6 +83,7 @@ async def load_model():
             
             total_size = int(response.headers.get('content-length', 0))
             downloaded = 0
+            last_logged_mb = -1  # Track last logged MB to throttle output
             
             with open(MODEL_FILE, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
@@ -90,8 +91,12 @@ async def load_model():
                         f.write(chunk)
                         downloaded += len(chunk)
                         if total_size > 0:
-                            percent = (downloaded / total_size) * 100
-                            print(f"   Progress: {percent:.1f}% ({downloaded // (1024*1024)} MB / {total_size // (1024*1024)} MB)", end='\r')
+                            # Only log every 20 MB to avoid Railway rate limits (500 logs/sec)
+                            current_mb = downloaded // (1024*1024)
+                            if current_mb != last_logged_mb and current_mb % 20 == 0:
+                                percent = (downloaded / total_size) * 100
+                                print(f"   Progress: {percent:.1f}% ({current_mb} MB / {total_size // (1024*1024)} MB)")
+                                last_logged_mb = current_mb
             
             print("\n✅ Model downloaded successfully!")
         except Exception as e:
